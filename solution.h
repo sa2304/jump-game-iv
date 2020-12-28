@@ -1,83 +1,65 @@
 #ifndef SOLUTION_H
 #define SOLUTION_H
 
+#include <iostream>
 #include <map>
 #include <queue>
 #include <set>
 #include <vector>
-
-class graph {
-public:
-  using Vertex = int;
-  using Distance = int;
-
-  void AddEdge(Vertex v1, Vertex v2) {
-    edges_.push_back({v1, v2});
-  }
-
-  std::pair<int, std::map<Vertex, Vertex>> shortestPath(Vertex from, Vertex to) const {
-    std::queue<std::pair<Vertex, Distance>> vertexes_queue;
-    std::map<Vertex, Vertex> previous;
-    std::set<int> visited;
-    int shortest_distance = -1;
-    bool found = false;
-    visited.insert(from);
-    vertexes_queue.push({from, 0});
-
-    while (!vertexes_queue.empty() && !found) {
-      auto [v1, dist] = vertexes_queue.front();
-      vertexes_queue.pop();
-      if (v1 == to) {
-        shortest_distance = dist;
-        found = true;
-      }
-      for (int v2 : incidentVertexes(v1)) {
-        if (!visited.count(v2)) {
-          vertexes_queue.push({v2, dist + 1});
-          previous[v2] = v1;
-          visited.insert(v2);
-        }
-      }
-    }
-
-    return { shortest_distance, previous };
-  }
-
-private:
-  std::vector<int> incidentVertexes(int vertex) const {
-    std::vector<int> result;
-    for (auto [v1, v2] : edges_) {
-      if (v1 == vertex) {
-        result.push_back(v2);
-      } else if (v2 == vertex) {
-        result.push_back(v1);
-      }
-    }
-
-    return result;
-  }
-
-  std::vector<std::pair<int,int>> edges_;
-};
+#include <unordered_map>
 
 class Solution {
 public:
-  int minJumps(std::vector<int>& arr) {
-    graph g;
-    for (size_t i = 0; i < arr.size(); ++i) {
-      for (size_t j = 0; j < arr.size(); ++j) {
-        if (i == j) {
-          continue;
-        }
 
-        if (i + 1 == j || j + 1 == i || arr[i] == arr[j]) {
-          g.AddEdge(i, j);
-        }
-      }
+  int minJumps(std::vector<int>& arr) {
+    using Index = int;
+    using Value = int;
+    std::unordered_map<Value, std::set<Index>> jumps;
+    int n = arr.size();
+    for (size_t i = 0; i < n; ++i) {
+      jumps[arr[i]].insert(i);
     }
 
-    auto [distance, previous] = g.shortestPath(0, arr.size()-1);
-    return distance;
+    std::queue<Index> bfs_queue;
+    std::set<Index> visited;
+    int level = 0;
+
+    bfs_queue.push(0);
+    visited.insert(0);
+
+    while (!bfs_queue.empty()) {
+      int level_nodes_count = bfs_queue.size();
+      while (level_nodes_count--) {
+        Index index = bfs_queue.front();
+        bfs_queue.pop();
+        if (index == n - 1) {
+          return level;
+        }
+
+        Index prev_index = index - 1;
+        if (0 <= prev_index && !visited.count(prev_index)) {
+          bfs_queue.push(prev_index);
+          visited.insert(prev_index);
+        }
+
+        Index next_index = index + 1;
+        if (next_index < n && !visited.count(next_index)) {
+          bfs_queue.push(next_index);
+          visited.insert(next_index);
+        }
+
+        for (Index jump_index : jumps.at(arr[index])) {
+          if (!visited.count(jump_index)) {
+            bfs_queue.push(jump_index);
+            visited.insert(jump_index);
+          }
+        }
+        jumps[arr[index]].clear();
+      }
+      ++level;
+    }
+
+    return level;
   }
 };
 
